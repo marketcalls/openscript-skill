@@ -20,11 +20,10 @@ Run this from the root of your OpenAlgo folder:
 npx skills add marketcalls/openscript-skill
 ```
 
-Or copy it by hand:
+Or clone it by hand, from the root of your OpenAlgo folder:
 
 ```bash
-git clone https://github.com/marketcalls/openscript-skill
-cp -r openscript-skill/.claude/skills/openscript /path/to/openalgo/.claude/skills/
+git clone https://github.com/marketcalls/openscript-skill .claude/skills/openscript
 ```
 
 Install it into the OpenAlgo project, not globally (`-g`). The skill writes into the `strategies/openscript/` folder of the project it sits in, so a global install has nowhere correct to put scripts.
