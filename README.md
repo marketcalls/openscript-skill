@@ -80,4 +80,4 @@ The skill is maintained in the OpenAlgo repository at [`.claude/skills/openscrip
 
 ## License
 
-GNU Affero General Public License v3.0, the same as OpenAlgo. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
