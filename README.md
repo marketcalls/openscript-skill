@@ -1,6 +1,6 @@
 # OpenScript Skill for AI Coding Agents
 
-An agent skill that writes, ports and debugs [OpenScript](https://github.com/marketcalls/openscript) studies and strategies for [OpenAlgo](https://github.com/marketcalls/openalgo), and installs a script only after it compiles with the same compiler the browser uses.
+An agent skill that writes, converts and debugs [OpenScript](https://github.com/marketcalls/openscript) studies and strategies for [OpenAlgo](https://github.com/marketcalls/openalgo), and installs a script only after it compiles with the same compiler the browser uses.
 
 Works with Claude Code, Cursor, Codex, OpenCode, Cline, Windsurf, GitHub Copilot, Gemini CLI and the other agents supported by [skills.sh](https://github.com/vercel-labs/skills).
 
@@ -9,7 +9,9 @@ Works with Claude Code, Cursor, Codex, OpenCode, Cline, Windsurf, GitHub Copilot
 - Drafts a `.oscript` study or strategy from a plain description ("an EMA crossover with a 1% stop and 2% target, intraday only").
 - Compiles it with `openalgo-script` and reports every diagnostic code before anything is installed.
 - Installs the source and its compiled program into `strategies/openscript/` together, from one compile, or not at all. The runner reads only the compiled program, so a source without one is a strategy that cannot run.
-- Ports scripts from other chart languages (`//@version=5` and `//@version=6`) and from OpenAlgo JavaScript chart indicators.
+- Converts an indicator or strategy from any platform or language: other chart and terminal scripting languages, C-like and C# indicator code, array formula languages, Python and pandas, spreadsheets, or a formula from a book. Scripts that open with `//@version=5` or `//@version=6` go through the compiler's own importer.
+- Checks a conversion bar by bar against the original platform's own numbers (an exported CSV of its bars and indicator values), and names the usual cause of a mismatch: a different seed, a one-bar shift, a sample against a population deviation, a percentage against a fraction.
+- Knows where indicators with the same name compute different numbers on different platforms. Every definition in its reference is measured against the compiler, not recalled.
 - Looks names up in a reference of all 350 library names, generated from the compiler, with the 95 that are planned and not yet implemented marked.
 
 ## Install
@@ -43,6 +45,8 @@ Ask your agent, for example:
 
 - "Write an OpenScript strategy that buys when RSI(14) crosses above 30 and exits at RSI 70, with a 1.5% stop loss."
 - "Port this `//@version=5` chart script to OpenScript." (paste the script)
+- "Convert this indicator from my other trading platform to OpenScript, and check it against values.csv, which I exported from that platform."
+- "Convert this pandas indicator to an OpenScript study that gives the same numbers."
 - "Why does my mean-reversion.oscript fail with OS2020?"
 
 The validator can also be run directly from the OpenAlgo root:
@@ -56,6 +60,12 @@ node .claude/skills/openscript/validate.mjs my_strategy.oscript --install
 
 # install under a different name
 node .claude/skills/openscript/validate.mjs draft.oscript --install --as mean-reversion.oscript
+
+# import a //@version=5 or 6 script as a draft
+node .claude/skills/openscript/import.mjs original.txt --out draft.oscript
+
+# compare a port with the values the original platform exported
+node .claude/skills/openscript/compare.mjs draft.oscript values.csv --zone Asia/Kolkata
 ```
 
 A pass means the compiler accepted the script. It does not mean the strategy is profitable or that its numbers are right: nothing here runs a single bar. Backtest it on `/trading` and run it in analyzer mode (Sandbox) before trading it Live.
@@ -66,12 +76,16 @@ A pass means the compiler accepted the script. It does not mean the strategy is 
 |---|---|
 | `SKILL.md` | The instructions the agent loads |
 | `validate.mjs` | Compiles a draft and installs it only on a clean pass |
+| `import.mjs` | Imports a `//@version=5` or `6` script as a draft, with a finding for every difference |
+| `compare.mjs` | Runs a port on exported bars and compares it with the original's values, bar by bar |
 | `reference/library.md` | All 350 names, with warmups, and which are planned |
 | `reference/pitfalls.md` | Common mistakes, each with the diagnostic code you will see |
 | `reference/strategies.md` | Strategy shapes, and the steps between a compile and trading Live |
+| `reference/porting-from-any-platform.md` | Porting from any platform or language, with the definitions that differ between platforms |
 | `reference/porting-from-javascript.md` | Porting an OpenAlgo JavaScript chart indicator into a study |
 | `examples/*.oscript` | Six worked examples, all of which compile |
-| `generate-reference.mjs`, `coverage.mjs`, `check-pitfalls.mjs` | Keep the reference in step with the compiler |
+| `generate-reference.mjs`, `coverage.mjs`, `check-pitfalls.mjs`, `check-porting.mjs` | Keep the reference and the porting pages in step with the compiler |
+| `compiler.mjs` | Finds or fetches the compiler for the scripts above |
 
 ## Source
 

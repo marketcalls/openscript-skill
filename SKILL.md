@@ -1,6 +1,6 @@
 ---
 name: openscript
-description: Write an OpenScript study or strategy for OpenAlgo, and install it into strategies/openscript/ only after it compiles. Use when asked to create, port or debug an OpenScript indicator, study, strategy, backtest script or .oscript file, including porting a study or strategy written for another charting platform, or a JavaScript chart indicator (an openalgo-charts descriptor) into a study that computes the same values. This is the OpenScript path, not the JavaScript chart-indicator path and not the Python openalgo.ta path.
+description: Write an OpenScript study or strategy for OpenAlgo, and install it into strategies/openscript/ only after it compiles. Use when asked to create, port or debug an OpenScript indicator, study, strategy, backtest script or .oscript file, including converting an indicator or strategy from any other platform or language (another chart or terminal scripting language, a C-like or C# indicator, an array formula language, Python or pandas code, a spreadsheet, or a formula from a book) or a JavaScript chart indicator (an openalgo-charts descriptor) into a script that computes the same values, checked bar by bar against the original's own numbers. This is the OpenScript path, not the JavaScript chart-indicator path and not the Python openalgo.ta path.
 argument-hint: "[what the study or strategy should do]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
@@ -83,6 +83,7 @@ and they are not optional.
 | `reference/library.md` | every one of the 350 names, with what it answers and its warmup. Generated from the installed compiler. |
 | `reference/pitfalls.md` | what goes wrong, with the diagnostic code you will actually see. Every code on it is proved against the compiler. |
 | `reference/strategies.md` | the shapes a strategy takes, and which example answers which ask. |
+| `reference/porting-from-any-platform.md` | porting from any other platform or language: which way its history runs, the shapes that recur, the definitions that differ between platforms under the same name (measured), the future, higher timeframes, strategies, notes by source, and checking parity with `compare.mjs`. |
 | `reference/porting-from-javascript.md` | porting a JavaScript chart indicator into a study that computes the same values: the chart helpers whose OpenScript twin differs, absent values, `fn` scope, markers, tables, inputs, and how to check parity. |
 | `examples/*.oscript` | six worked files, all of which compile. The reasoning is in the comments. |
 
@@ -91,29 +92,50 @@ and the dangerous failure is not reaching for a name that does not exist: it is
 reaching for a neighbour that computes something else, which compiles and
 reports a different strategy than the one that was meant.
 
-## Porting from another chart language
+## Porting from another platform
 
-The installed compiler carries an importer for the widely used chart language
-whose scripts open with `//@version=5` or `//@version=6`. Each statement comes
-across with its original meaning, or with a warning stating the difference, or
-as a comment with an error, all in the range `OS9001` to `OS9012`, and what it
-hands back has been compiled. Save the original as `<scratch>/original.txt`,
-then from the repository root (the file is an argument, not standard input):
+Any indicator or strategy can be ported, from any platform or language. Pick
+the route by what the original looks like:
+
+| The original | Route |
+|---|---|
+| opens with `//@version=5` or `//@version=6` | `import.mjs` (below), then the definitions table in `reference/porting-from-any-platform.md` for each `OS9007` |
+| version 4 of that language | convert it to version 5 in its own editor and import; port by hand what does not convert |
+| version 3 or older, or no version line | its editor converts version 3 to 4 only: convert where it can, port by hand where it cannot |
+| a JavaScript `registerIndicator` descriptor | `reference/porting-from-javascript.md` |
+| anything else: another chart or terminal language, C-like or C# indicator code, an array formula language, Python, a spreadsheet, a formula from a book | `reference/porting-from-any-platform.md` |
+
+**Get the original's own numbers first.** A port is done when it computes what
+the original computed, bar by bar, and the only proof is the original's values:
+an export of its chart (bars plus indicator columns), the output of running a
+Python original, a spreadsheet saved as CSV, or a book's worked table typed in.
+Without them, say plainly that the port compiled and was not compared.
 
 ```bash
-node --input-type=module -e "import { importScript } from './frontend/node_modules/openalgo-script/dist/core/index.js'; import { readFileSync } from 'node:fs'; const r = importScript(readFileSync(process.argv[1], 'utf8')); process.stdout.write(r.source); for (const f of r.findings) console.error(f.code, f.message)" <scratch>/original.txt > <scratch>/ported.oscript
+# the version-annotated chart language: a draft, with a finding per difference
+node .claude/skills/openscript/import.mjs <scratch>/original.txt --out <scratch>/ported.oscript
+
+# any source: compile, then compare with the original's printed values
+node .claude/skills/openscript/validate.mjs <scratch>/ported.oscript
+node .claude/skills/openscript/compare.mjs <scratch>/ported.oscript <scratch>/values.csv --zone Asia/Kolkata
 ```
 
-The output is a draft, not a port. Read every finding: a warning marks a place
-where the numbers can differ from the original, and a line kept as a comment is
-behaviour that did not come across. Then take it through `validate.mjs` like
-any other draft.
+The importer brings each statement across with its original meaning, or with a
+warning stating the difference, or as a comment with an error, all in the range
+`OS9001` to `OS9012`. Its output is a draft, not a port: read every finding.
 
-To port a JavaScript chart indicator (an `openalgo-charts` descriptor handed to
-`registerIndicator`, with `calc(bars, settings)`) into a study, read
-`reference/porting-from-javascript.md` first: there is no importer for that
-direction, and several chart helpers share a name with a built-in that computes
-something else.
+`compare.mjs` pairs each plot with the column of the same title and reports the
+first and largest difference, and when the difference has a recognisable shape
+(a seed that converges, a one-bar shift, a population against a sample
+deviation, a percentage against a fraction) it says so. Iterate until it
+reports SAME on the settings that matter, and tell the trader about any
+difference that remains and why.
+
+**The same name rarely means the same numbers.** An "EMA", "RSI", "ATR" or
+"standard deviation" on another platform can be seeded differently, smoothed
+differently or divided by `n - 1`. Every one of those compiles. The definitions
+table in `reference/porting-from-any-platform.md` says what each OpenScript
+built-in computes, measured, and gives the helper for each common variant.
 
 ## Three things that cost the most time
 
@@ -137,13 +159,19 @@ of bars and looks like it works.
 
 ## Keeping the skill honest
 
-The generator and two checks, all three of which the CI job runs:
+The generator and three checks, all four of which the CI job runs:
 
 ```bash
 node .claude/skills/openscript/generate-reference.mjs   # rewrites reference/library.md
 node .claude/skills/openscript/coverage.mjs             # must print COVERAGE COMPLETE
 node .claude/skills/openscript/check-pitfalls.mjs       # must print PITFALLS VERIFIED
+node .claude/skills/openscript/check-porting.mjs        # must print PORTING VERIFIED
 ```
+
+`check-porting.mjs` compiles every code block on both porting pages as the page
+says it behaves, and runs every row of the definitions table on test bars
+against an implementation written from the stated definition, first bar
+included. A porting page whose claim has drifted fails the build.
 
 `coverage.mjs` holds the reference to the compiler in both directions (a name
 the compiler has and the page lacks fails, and so does a name the page teaches
