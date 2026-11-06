@@ -42,6 +42,12 @@ import { pathToFileURL } from 'node:url'
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..', '..')
 const INSTALL_DIR = join(REPO_ROOT, 'strategies', 'openscript')
+/**
+ * Whether this skill sits inside an OpenAlgo folder. Installed anywhere else,
+ * globally for instance, it still writes and checks code; it has nowhere to
+ * install it, and must not invent a strategies folder three levels up.
+ */
+const IN_OPENALGO = existsSync(join(REPO_ROOT, 'app.py')) && existsSync(join(REPO_ROOT, 'blueprints'))
 /** A front end developer already has it here, at the exact pinned version. */
 const DEV_ROOT = join(REPO_ROOT, 'frontend', 'node_modules', 'openalgo-script')
 /** Everyone else gets just this one package cached here. Gitignored. */
@@ -266,6 +272,15 @@ if (requires.includes('orders')) {
   console.log('This places orders. Installed, it still does nothing until somebody deploys it')
   console.log('on an instrument and starts it, and where its orders go is the platform mode:')
   console.log('live with a broker, or the sandbox in analyzer mode.')
+}
+
+if (!IN_OPENALGO) {
+  console.log('')
+  console.log('This skill is not inside an OpenAlgo folder, so there is nowhere to install the')
+  console.log('script. It compiled: hand back the whole file. To use it, paste it into the')
+  console.log('OpenScript editor on /trading, which saves the source and its compiled program')
+  console.log('together.')
+  process.exit(install ? 1 : 0)
 }
 
 if (!install) {

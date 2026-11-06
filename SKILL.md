@@ -1,15 +1,35 @@
 ---
 name: openscript
-description: Write an OpenScript study or strategy for OpenAlgo, and install it into strategies/openscript/ only after it compiles. Use when asked to create, port or debug an OpenScript indicator, study, strategy, backtest script or .oscript file, including converting an indicator or strategy from any other platform or language (another chart or terminal scripting language, a C-like or C# indicator, an array formula language, Python or pandas code, a spreadsheet, or a formula from a book) or a JavaScript chart indicator (an openalgo-charts descriptor) into a script that computes the same values, checked bar by bar against the original's own numbers. This is the OpenScript path, not the JavaScript chart-indicator path and not the Python openalgo.ta path.
+description: Write an OpenScript study or strategy for OpenAlgo, and install it into strategies/openscript/ only after it compiles. Use when asked to create, port or debug an OpenScript indicator, study, strategy, backtest script or .oscript file, including converting a TradingView Pine Script, or an indicator or strategy from any other platform or language (another chart or terminal scripting language, a C-like or C# indicator, an array formula language, Python or pandas code, a spreadsheet, or a formula from a book) or a JavaScript chart indicator (an openalgo-charts descriptor) into a script that computes the same values, checked bar by bar against the original's own numbers. This is the OpenScript path, not the JavaScript chart-indicator path and not the Python openalgo.ta path.
 argument-hint: "[what the study or strategy should do]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # OpenScript studies and strategies
 
-Write a `.oscript` file and install it into `strategies/openscript/`, where it
-becomes a study or a strategy a trader can open in the editor, backtest on
-`/trading`, and deploy on an instrument.
+Write an OpenScript study or strategy, from a description or converted from a
+Pine Script or any other platform, compile it, and hand back the code. Inside
+an OpenAlgo folder it can also be installed into `strategies/openscript/`,
+where it becomes a study or a strategy a trader can open in the editor,
+backtest on `/trading`, and deploy on an instrument.
+
+## What to hand back
+
+People use this skill for three things: writing an indicator, writing a
+strategy, and converting one from Pine Script or another platform. What they
+want is **the code**, so every answer ends with:
+
+1. **The complete `.oscript` file**, in the reply and saved to a file: never a
+   fragment, never a draft that has not compiled. Run it through
+   `validate.mjs` first, and show it only once it reports PASSED.
+2. **What the compile did not prove.** A compile runs no bars. For a
+   conversion, say whether it was compared with the original's numbers
+   (`compare.mjs`), and if not, that it was not.
+3. **Every warning and every difference from the original**, in plain words.
+4. **How to use it**: paste it into the OpenScript editor on `/trading`, or,
+   when the skill sits inside an OpenAlgo folder and the person asked,
+   install it with `validate.mjs --install`. Outside an OpenAlgo folder
+   `--install` refuses, because there is nowhere to install it.
 
 **Which path is this.** Three unrelated things in this repository are called
 indicators, and they share nothing but the word:
@@ -99,9 +119,9 @@ the route by what the original looks like:
 
 | The original | Route |
 |---|---|
-| opens with `//@version=5` or `//@version=6` | `import.mjs` (below), then the definitions table in `reference/porting-from-any-platform.md` for each `OS9007` |
-| version 4 of that language | convert it to version 5 in its own editor and import; port by hand what does not convert |
-| version 3 or older, or no version line | its editor converts version 3 to 4 only: convert where it can, port by hand where it cannot |
+| a Pine Script that opens with `//@version=5` or `//@version=6` | `import.mjs` (below), then the definitions table in `reference/porting-from-any-platform.md` for each `OS9007` |
+| a version 4 Pine Script | convert it to version 5 in its own editor and import; port by hand what does not convert |
+| a version 3 or older Pine Script, or one with no version line | its editor converts version 3 to 4 only: convert where it can, port by hand where it cannot |
 | a JavaScript `registerIndicator` descriptor | `reference/porting-from-javascript.md` |
 | anything else: another chart or terminal language, C-like or C# indicator code, an array formula language, Python, a spreadsheet, a formula from a book | `reference/porting-from-any-platform.md` |
 
